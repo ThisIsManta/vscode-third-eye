@@ -1,0 +1,42 @@
+{
+  "name": "third-eye",
+  "displayName": "Manta's Third Eye",
+  "description": "Jump through files effortlessly",
+  "version": "0.0.1",
+  "publisher": "thisismanta",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ThisIsManta/vscode-third-eye.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ThisIsManta/vscode-third-eye/issues"
+  },
+  "engines": {
+    "vscode": "^1.11.0"
+  },
+  "activationEvents": [
+    "onLanguage:javascript",
+    "onLanguage:javascriptreact",
+    "onLanguage:stylus"
+  ],
+  "main": "./dist/extension",
+  "scripts": {
+    "postinstall": "node ./node_modules/vscode/bin/install",
+    "compile": "tsc --watch --project ./",
+    "vscode:prepublish": "tsc --skipLibCheck --project ./",
+    "preversion": "npm run vscode:prepublish",
+    "version": "vsce publish",
+    "postversion": "git push --tags --quiet origin master:master"
+  },
+  "devDependencies": {
+    "@types/node": "^8.0.24",
+    "vscode": "^1.1.4"
+  },
+  "dependencies": {
+    "babylon": "^6.18.0",
+    "stylus": "^0.54.5",
+    "stylus-supremacy": "^1.6.4",
+    "typescript": "^2.4.2"
+  }
+}
