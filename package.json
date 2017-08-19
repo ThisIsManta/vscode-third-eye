@@ -6,11 +6,15 @@
   "publisher": "thisismanta",
   "license": "ISC",
   "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ThisIsManta/vscode-third-eye.git"
+    "url": "https://github.com/ThisIsManta/vscode-third-eye"
   },
   "bugs": {
     "url": "https://github.com/ThisIsManta/vscode-third-eye/issues"
+  },
+  "icon": "docs/logo.png",
+  "galleryBanner": {
+    "color": "#212121",
+    "theme": "dark"
   },
   "engines": {
     "vscode": "^1.11.0"
