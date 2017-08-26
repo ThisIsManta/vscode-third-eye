@@ -15,20 +15,12 @@ interface Stub {
 	node: any
 }
 
-export default class JavaScriptLinker implements vscode.DocumentLinkProvider {
-
+export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vscode.ImplementationProvider {
 	static support = ['javascript', 'javascriptreact'].map(name => ({ language: name }))
 
 	provideDocumentLinks(document: vscode.TextDocument, cancellationToken: vscode.CancellationToken) {
-		let root
-		try {
-			root = babylon.parse(document.getText(), {
-				sourceType: 'module',
-				plugins: ['jsx', 'flow', 'doExpressions', 'objectRestSpread', 'decorators', 'classProperties', 'exportExtensions', 'asyncGenerators', 'functionBind', 'functionSent', 'dynamicImport',]
-			})
-
-		} catch (ex) {
-			console.error(ex)
+		let root = parseTreeOrNull(document)
+		if (root === null) {
 			return null
 		}
 
@@ -127,6 +119,46 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider {
 
 		return links
 	}
+
+	provideImplementation(document: vscode.TextDocument, position: vscode.Position, cancellationToken: vscode.CancellationToken) {
+		let root = parseTreeOrNull(document)
+		if (root === null) {
+			return null
+		}
+
+		let name: string
+		const imports = root.program.body
+			.filter(node => node.type === 'ImportDeclaration' && node.source.type === 'StringLiteral' && node.source.value && checkIfBetween(node.source.loc, position))
+			.map(node => node.source.value)
+		name = _.first(imports)
+
+		if (!name) {
+			const requires = findNodes(root, node => node.type === 'CallExpression' && _.get(node, 'callee.name') === 'require' && _.get(node, 'arguments.0.type') === 'StringLiteral' && checkIfBetween(node.arguments[0].loc, position))
+				.map(node => _.get(node, 'arguments.0.value'))
+			name = _.first(requires)
+		}
+
+		if (!name) {
+			return null
+		}
+
+		const pack = getNPMInfoOrNull(name)
+		if (_.has(pack, 'main')) {
+			return new vscode.Location(vscode.Uri.file(fp.resolve(fp.join(vscode.workspace.rootPath, 'node_modules', name), pack.main)), new vscode.Position(0, 0))
+		}
+	}
+}
+
+function parseTreeOrNull(document: vscode.TextDocument) {
+	try {
+		return babylon.parse(document.getText(), {
+			sourceType: 'module',
+			plugins: ['jsx', 'flow', 'doExpressions', 'objectRestSpread', 'decorators', 'classProperties', 'exportExtensions', 'asyncGenerators', 'functionBind', 'functionSent', 'dynamicImport',]
+		})
+
+	} catch (ex) {
+		return null
+	}
 }
 
 function findNodes(node, filter: (node) => boolean, selector = node => node, results = []): any[] {
@@ -159,28 +191,43 @@ function createRange(location) {
 	return new vscode.Range(location.start.line - 1, location.start.column + 1, location.end.line - 1, location.end.column - 1)
 }
 
-const createUriForNPMModule: (name: string) => vscode.Uri = _.memoize(name => {
+function getNPMInfoOrNull(name: string) {
 	const path = fp.join(vscode.workspace.rootPath, 'node_modules', name, 'package.json')
 	if (fs.existsSync(path)) {
 		try {
-			const file = fs.readFileSync(path, 'utf-8')
-			const pack = JSON.parse(file)
-			if (_.isString(pack.homepage)) {
-				return vscode.Uri.parse(pack.homepage)
-
-			} else if (_.has(pack.repository.url)) {
-				return vscode.Uri.parse(pack.repository.url)
-
-			} else if (_.isString(pack.repository) && pack.repository.includes(':') === false) {
-				return vscode.Uri.parse('https://github.com/' + pack.repository)
-
-			} else {
-				return vscode.Uri.parse('https://www.npmjs.com/package/' + name)
-			}
+			return JSON.parse(fs.readFileSync(path, 'utf-8'))
 
 		} catch (ex) {
 			console.error(ex)
 		}
 	}
 	return null
+}
+
+const createUriForNPMModule: (name: string) => vscode.Uri = _.memoize(name => {
+	const pack = getNPMInfoOrNull(name)
+	if (_.isObject(pack)) {
+		if (_.isString(pack.homepage)) {
+			return vscode.Uri.parse(pack.homepage)
+
+		} else if (_.has(pack.repository.url)) {
+			return vscode.Uri.parse(pack.repository.url)
+
+		} else if (_.isString(pack.repository) && pack.repository.includes(':') === false) {
+			return vscode.Uri.parse('https://github.com/' + pack.repository)
+
+		} else {
+			return vscode.Uri.parse('https://www.npmjs.com/package/' + name)
+		}
+	}
+
+	return null
 })
+
+function checkIfBetween(location: { start: { line: number, column: number }, end: { line: number, column: number } }, position: vscode.Position) {
+	return (
+		location &&
+		location.start.line - 1 <= position.line && position.line <= location.end.line - 1 &&
+		location.start.column <= position.character && position.character <= location.end.column
+	)
+}
