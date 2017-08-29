@@ -30,6 +30,7 @@
     "vscode": "^1.11.0"
   },
   "activationEvents": [
+    "onLanguage:go",
     "onLanguage:javascript",
     "onLanguage:javascriptreact",
     "onLanguage:stylus"

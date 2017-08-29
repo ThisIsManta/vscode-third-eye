@@ -6,6 +6,15 @@ Once the extension is installed, all supported file paths will be underlined, so
 
 Currently, the extension supports the following patterns:  
 - **JavaScript** and **JavaScript React**
+  ```go
+  import (
+    "fmt"
+    "golang.org/x/net/context"
+    "github.com/go-kit/kit/log"
+    "my/local/project"
+  )
+  ```
+- **JavaScript** and **JavaScript React**
   ```js
   import * as named from './file.js'
   import './file.js'
