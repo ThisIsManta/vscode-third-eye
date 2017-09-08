@@ -5,9 +5,9 @@ import * as vscode from 'vscode'
 import * as babylon from 'babylon'
 import * as _ from 'lodash'
 
-const nodeAPIs = new RegExp('^(addon|assert|buffer|child_process|cluster|console|crypto|dgram|dns|domain|events|fs|http|http|https|net|os|path|punycode|querystring|readline|repl|stream|string_decoder|timers|tls|tty|url|util|v8|vm|zlib)$')
+export const nodeAPIs = new RegExp('^(addon|assert|buffer|child_process|cluster|console|crypto|dgram|dns|domain|events|fs|http|http|https|net|os|path|punycode|querystring|readline|repl|stream|string_decoder|timers|tls|tty|url|util|v8|vm|zlib)$')
 const nodeVers = String(cp.execSync('node -v', { encoding: 'utf-8' })).trim()
-const createUriForNodeAPI = (name: string) => vscode.Uri.parse(`https://nodejs.org/dist/${nodeVers}/docs/api/${name}.html`)
+export const createUriForNodeAPI = (name: string) => vscode.Uri.parse(`https://nodejs.org/dist/${nodeVers}/docs/api/${name}.html`)
 
 interface Stub {
 	span: vscode.Range
@@ -135,7 +135,7 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 		if (!name) {
 			const requires = findNodes(root, node => node.type === 'CallExpression' && _.get(node, 'callee.name') === 'require' && _.get(node, 'arguments.0.type') === 'StringLiteral' && checkIfBetween(node.arguments[0].loc, position))
 				.map(node => _.get(node, 'arguments.0.value'))
-			name = _.first(requires)
+			name = _.first(requires) as string
 		}
 
 		if (!name) {
@@ -204,13 +204,13 @@ function getNPMInfoOrNull(name: string) {
 	return null
 }
 
-const createUriForNPMModule: (name: string) => vscode.Uri = _.memoize(name => {
+export const createUriForNPMModule: (name: string) => vscode.Uri = _.memoize(name => {
 	const pack = getNPMInfoOrNull(name)
 	if (_.isObject(pack)) {
 		if (_.isString(pack.homepage)) {
 			return vscode.Uri.parse(pack.homepage)
 
-		} else if (_.has(pack.repository.url)) {
+		} else if (_.has(pack, 'repository.url')) {
 			return vscode.Uri.parse(pack.repository.url)
 
 		} else if (_.isString(pack.repository) && pack.repository.includes(':') === false) {

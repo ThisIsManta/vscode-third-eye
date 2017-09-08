@@ -1,3 +1,6 @@
+## 3.0.0
+- Added support of **TypeScript**: `import`.
+
 ## 2.0.0
 - Added support of **Go**: `import`.
 

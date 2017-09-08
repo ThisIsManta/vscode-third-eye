@@ -20,7 +20,7 @@ Currently, the extension supports the following patterns:
   import './file.js'
   require('./file.js')
 
-  // This will link to https://nodejs.org/api/fs.html in your browser and so does apply to all native Node.js APIs.
+  // This will open https://nodejs.org/api/fs.html in your browser and so does apply to all native Node.js APIs.
   var fs = require('fs')
 
   // In addition to `require`, any static file path in a function-call can be linked as well.
@@ -28,7 +28,7 @@ Currently, the extension supports the following patterns:
   var doSomething = function () {...}
   doSomething('./file.js')
 
-  // This will link to its homepage, repository, or NPM page.
+  // This will open either its homepage, repository, or NPM page.
   // Clicking "Go > Go to Implementation" menu will bring you the actual code in your local "node_modules" directory.
   import something from 'thrid-party-npm-module'
   ```
@@ -36,4 +36,12 @@ Currently, the extension supports the following patterns:
   ```stylus
   @import './file.styl'
   @require './file.styl'
+  ```
+- **TypeScript** and **TypeScript React**
+  ```typescript
+  // This will open https://nodejs.org/api/fs.html in your browser and so does apply to all native Node.js APIs.
+  import * as named from 'fs'
+
+  // This will open either its homepage, repository, or NPM page.
+  import something from 'thrid-party-npm-module'
   ```

@@ -8,6 +8,9 @@ const go = new Go()
 import JavaScript from './javascript'
 const javaScript = new JavaScript()
 
+import TypeScript from './typescript'
+const typeScript = new TypeScript()
+
 import Stylus from './stylus'
 const stylus = new Stylus()
 
@@ -16,6 +19,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(JavaScript.support, javaScript))
 	context.subscriptions.push(vscode.languages.registerImplementationProvider(JavaScript.support, javaScript))
+
+	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(TypeScript.support, typeScript))
 	
 	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(Stylus.support, stylus))
 }
