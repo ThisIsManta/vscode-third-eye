@@ -5,7 +5,7 @@ Once the extension is installed, all supported file paths will be underlined, so
 ![Demo](docs/demo.gif)
 
 Currently, the extension supports the following patterns:  
-- **JavaScript** and **JavaScript React**
+- **Go**
   ```go
   import (
     "fmt"
