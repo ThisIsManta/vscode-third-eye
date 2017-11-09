@@ -13,6 +13,7 @@ export default class TypeScript implements vscode.DocumentLinkProvider {
 
 	provideDocumentLinks(document: vscode.TextDocument, token: vscode.CancellationToken): vscode.ProviderResult<vscode.DocumentLink[]> {
 		const root = ts.createSourceFile('nada', document.getText(), ts.ScriptTarget.ESNext, true)
+		const rootPath = vscode.workspace.getWorkspaceFolder(document.uri).uri.fsPath
 
 		const links: vscode.DocumentLink[] = []
 
@@ -30,7 +31,7 @@ export default class TypeScript implements vscode.DocumentLinkProvider {
 					links.push(new vscode.DocumentLink(span, js.createUriForNodeAPI(name)))
 
 				} else {
-					links.push(new vscode.DocumentLink(span, js.createUriForNPMModule(name)))
+					links.push(new vscode.DocumentLink(span, js.createUriForNPMModule(name, rootPath)))
 				}
 			}
 		})

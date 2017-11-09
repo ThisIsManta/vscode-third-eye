@@ -1,3 +1,6 @@
+## 3.0.1
+- Added support of **Visual Studio Code** 1.18.0.
+
 ## 3.0.0
 - Added support of **TypeScript**: `import`.
 

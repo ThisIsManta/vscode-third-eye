@@ -19,6 +19,8 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 	static support = ['javascript', 'javascriptreact'].map(name => ({ language: name }))
 
 	provideDocumentLinks(document: vscode.TextDocument, cancellationToken: vscode.CancellationToken) {
+		const rootPath = vscode.workspace.getWorkspaceFolder(document.uri).uri.fsPath
+
 		let root = parseTreeOrNull(document)
 		if (root === null) {
 			return null
@@ -110,7 +112,7 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 					return null
 				}
 
-				const uri = createUriForNPMModule(stub.path)
+				const uri = createUriForNPMModule(stub.path, rootPath)
 				if (uri !== null) {
 					links.push(new vscode.DocumentLink(stub.span, uri))
 				}
@@ -142,9 +144,10 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 			return null
 		}
 
-		const pack = getNPMInfoOrNull(name)
+		const rootPath = vscode.workspace.getWorkspaceFolder(document.uri).uri.fsPath
+		const pack = getNPMInfoOrNull(name, rootPath)
 		if (_.has(pack, 'main')) {
-			return new vscode.Location(vscode.Uri.file(fp.resolve(fp.join(vscode.workspace.rootPath, 'node_modules', name), pack.main)), new vscode.Position(0, 0))
+			return new vscode.Location(vscode.Uri.file(fp.resolve(fp.join(rootPath, 'node_modules', name), pack.main)), new vscode.Position(0, 0))
 		}
 	}
 }
@@ -191,8 +194,8 @@ function createRange(location) {
 	return new vscode.Range(location.start.line - 1, location.start.column + 1, location.end.line - 1, location.end.column - 1)
 }
 
-function getNPMInfoOrNull(name: string) {
-	const path = fp.join(vscode.workspace.rootPath, 'node_modules', name, 'package.json')
+function getNPMInfoOrNull(name: string, rootPath: string) {
+	const path = fp.join(rootPath, 'node_modules', name, 'package.json')
 	if (fs.existsSync(path)) {
 		try {
 			return JSON.parse(fs.readFileSync(path, 'utf-8'))
@@ -204,8 +207,8 @@ function getNPMInfoOrNull(name: string) {
 	return null
 }
 
-export const createUriForNPMModule: (name: string) => vscode.Uri = _.memoize(name => {
-	const pack = getNPMInfoOrNull(name)
+export const createUriForNPMModule: (name: string, rootPath: string) => vscode.Uri = _.memoize((name: string, rootPath: string) => {
+	const pack = getNPMInfoOrNull(name, rootPath)
 	if (_.isObject(pack)) {
 		if (_.isString(pack.homepage)) {
 			return vscode.Uri.parse(pack.homepage)
@@ -222,7 +225,7 @@ export const createUriForNPMModule: (name: string) => vscode.Uri = _.memoize(nam
 	}
 
 	return null
-})
+}, (name: string, rootPath: string) => rootPath + '|' + name)
 
 function checkIfBetween(location: { start: { line: number, column: number }, end: { line: number, column: number } }, position: vscode.Position) {
 	return (
