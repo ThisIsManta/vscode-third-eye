@@ -1,61 +1,83 @@
 {
-  "name": "third-eye",
-  "displayName": "Manta's Third Eye",
-  "description": "Jump through files effortlessly.",
-  "version": "3.0.1",
-  "publisher": "thisismanta",
-  "license": "ISC",
-  "categories": [
-    "Languages"
-  ],
-  "keywords": [
-    "jump",
-    "goto",
-    "open",
-    "import",
-    "file"
-  ],
-  "repository": {
-    "url": "https://github.com/ThisIsManta/vscode-third-eye"
-  },
-  "bugs": {
-    "url": "https://github.com/ThisIsManta/vscode-third-eye/issues"
-  },
-  "icon": "docs/logo.png",
-  "galleryBanner": {
-    "color": "#212121",
-    "theme": "dark"
-  },
-  "engines": {
-    "vscode": "^1.18.0"
-  },
-  "activationEvents": [
-    "onLanguage:go",
-    "onLanguage:javascript",
-    "onLanguage:javascriptreact",
-    "onLanguage:typescript",
-    "onLanguage:typescriptreact",
-    "onLanguage:stylus"
-  ],
-  "main": "./dist/extension",
-  "scripts": {
-    "postinstall": "node ./node_modules/vscode/bin/install",
-    "compile": "tsc --watch --project ./",
-    "vscode:prepublish": "tsc --skipLibCheck --project ./",
-    "preversion": "npm run vscode:prepublish",
-    "version": "vsce publish",
-    "postversion": "git push --tags --quiet origin master:master"
-  },
-  "devDependencies": {
-    "@types/lodash": "^4.14.74",
-    "@types/node": "^8.0.24",
-    "vscode": "^1.1.6"
-  },
-  "dependencies": {
-    "babylon": "^6.18.0",
-    "lodash": "^4.17.4",
-    "stylus": "^0.54.5",
-    "stylus-supremacy": "^1.6.4",
-    "typescript": "^2.4.2"
-  }
+	"name": "third-eye",
+	"displayName": "Manta's Third Eye",
+	"description": "Jump through files effortlessly.",
+	"version": "3.0.1",
+	"publisher": "thisismanta",
+	"license": "ISC",
+	"categories": [
+		"Languages"
+	],
+	"keywords": [
+		"jump",
+		"goto",
+		"open",
+		"import",
+		"file"
+	],
+	"repository": {
+		"url": "https://github.com/ThisIsManta/vscode-third-eye"
+	},
+	"bugs": {
+		"url": "https://github.com/ThisIsManta/vscode-third-eye/issues"
+	},
+	"icon": "docs/logo.png",
+	"galleryBanner": {
+		"color": "#212121",
+		"theme": "dark"
+	},
+	"engines": {
+		"vscode": "^1.18.0"
+	},
+	"activationEvents": [
+		"*"
+	],
+	"contributes": {
+		"commands": [
+			{
+				"command": "thirdEye.openRecent",
+				"title": "Third Eye: Open Recent File"
+			},
+			{
+				"command": "thirdEye.openSimilar",
+				"title": "Third Eye: Open Similar File"
+			},
+			{
+				"command": "thirdEye.openPackage",
+				"title": "Third Eye: Open package.json"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "thirdEye.openRecent"
+			},
+			{
+				"command": "thirdEye.openSimilar"
+			},
+			{
+				"command": "thirdEye.openPackage"
+			}
+		]
+	},
+	"main": "./dist/extension",
+	"scripts": {
+		"postinstall": "node ./node_modules/vscode/bin/install",
+		"compile": "tsc --watch --project ./",
+		"vscode:prepublish": "tsc --skipLibCheck --project ./",
+		"preversion": "npm run vscode:prepublish",
+		"version": "vsce publish",
+		"postversion": "git push --tags --quiet origin master:master"
+	},
+	"devDependencies": {
+		"@types/lodash": "^4.14.74",
+		"@types/node": "^8.0.24",
+		"vscode": "^1.1.6"
+	},
+	"dependencies": {
+		"babylon": "^6.18.0",
+		"lodash": "^4.17.4",
+		"stylus": "^0.54.5",
+		"stylus-supremacy": "^1.6.4",
+		"typescript": "^2.4.2"
+	}
 }

@@ -1,3 +1,8 @@
+## 4.0.0
+- Added `openRecent` command.
+- Added `openSimilar` command.
+- Added `openPackage` command.
+
 ## 3.0.1
 - Added support of **Visual Studio Code** 1.18.0.
 
