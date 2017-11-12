@@ -4,25 +4,22 @@ import * as vscode from 'vscode'
 import * as _ from 'lodash'
 
 import Go from './go'
-const go = new Go()
-
 import JavaScript from './javascript'
-const javaScript = new JavaScript()
-
 import TypeScript from './typescript'
-const typeScript = new TypeScript()
-
 import Stylus from './stylus'
-const stylus = new Stylus()
 
 export function activate(context: vscode.ExtensionContext) {
+	const go = new Go()
 	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(Go.support, go))
 
+	const javaScript = new JavaScript()
 	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(JavaScript.support, javaScript))
 	context.subscriptions.push(vscode.languages.registerImplementationProvider(JavaScript.support, javaScript))
 
+	const typeScript = new TypeScript()
 	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(TypeScript.support, typeScript))
 
+	const stylus = new Stylus()
 	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(Stylus.support, stylus))
 
 	let openingEditors: Array<vscode.TextEditor> = []
