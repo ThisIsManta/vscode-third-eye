@@ -64,10 +64,24 @@ export function activate(context: vscode.ExtensionContext) {
 		const lazyPath = (dirxPath + '/' + lazyName).replace(/\\/g, '/').replace(/^\//, '')
 
 		const fileList = await vscode.workspace.findFiles(lazyPath + '.*')
-		const selxRank = fileList.findIndex(nextLink => nextLink.fsPath === fileLink.fsPath)
-		if (selxRank >= 0) {
-			const nextLink = fileList.concat(fileList)[selxRank + 1]
-			vscode.window.showTextDocument(nextLink)
+		if (fileList.length <= 1) {
+			return null
+		}
+
+		const fileRank = fileList.findIndex(nextLink => nextLink.fsPath === fileLink.fsPath)
+		if (fileList.length === 2) {
+			if (fileRank >= 0) {
+				const nextLink = fileList.concat(fileList)[fileRank + 1]
+				vscode.window.showTextDocument(nextLink)
+			}
+
+		} else {
+			const pickList = _.sortBy(fileList, item => fileList.indexOf(item) >= fileRank ? 0 : 1).map(item => fp.basename(item.fsPath))
+			const pickItem = await vscode.window.showQuickPick(pickList)
+			if (pickItem) {
+				const nextLink = vscode.Uri.file(fp.resolve(filePath, '..', pickItem))
+				vscode.window.showTextDocument(nextLink)
+			}
 		}
 	}))
 
