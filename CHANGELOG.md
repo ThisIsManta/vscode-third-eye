@@ -1,3 +1,6 @@
+## 4.1.0
+- Amended `openSimilar` command so that it prompts a file picker dialog.
+
 ## 4.0.0
 - Added `openRecent` command.
 - Added `openSimilar` command.
