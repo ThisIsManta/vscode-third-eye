@@ -32,33 +32,6 @@
 	"activationEvents": [
 		"*"
 	],
-	"contributes": {
-		"commands": [
-			{
-				"command": "thirdEye.openRecent",
-				"title": "Third Eye: Open Recent File"
-			},
-			{
-				"command": "thirdEye.openSimilar",
-				"title": "Third Eye: Open Similar File"
-			},
-			{
-				"command": "thirdEye.openPackage",
-				"title": "Third Eye: Open package.json"
-			}
-		],
-		"keybindings": [
-			{
-				"command": "thirdEye.openRecent"
-			},
-			{
-				"command": "thirdEye.openSimilar"
-			},
-			{
-				"command": "thirdEye.openPackage"
-			}
-		]
-	},
 	"main": "./dist/extension",
 	"scripts": {
 		"postinstall": "node ./node_modules/vscode/bin/install",

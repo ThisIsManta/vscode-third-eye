@@ -1,4 +1,4 @@
-**Third Eye** is a Visual Studio Code extension for jumping through files effortlessly.
+**Third Eye** is a Visual Studio Code extension that helps jumping through files effortlessly.
 
 ## Basic usage
 
@@ -47,11 +47,3 @@ Currently, the extension supports the following patterns:
   // This will open either its homepage, repository, or NPM page.
   import something from 'thrid-party-npm-module'
   ```
-
-## Available commands
-
-The extension also contributes the following commands and keybindings:
-
-- **Open Recent File** (`thirdEye.openRecent`) - Open the recently opened file. This command is quite like `workbench.action.openNextRecentlyUsedEditorInGroup`, but this does not distract you with any dialogs or pop-ups.
-- **Open Similar File** (`thirdEye.openSimilar`) - Open the files that share the same name and directory with the current active file. For example, this command will cycle through _MyComponent.js_, _MyComponent.test.js_, and _MyComponent.css_.
-- **Open package.json** (`thirdEye.openPackage`) - Open the _package.json_ file in the root workspace.

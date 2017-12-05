@@ -1,3 +1,8 @@
+## 5.0.0
+- Removed `openRecent` command in favor of [**Sparrow Keys**](https://marketplace.visualstudio.com/items?itemName=thisismanta.sparrow-keys).
+- Removed `openSimilar` command in favor of [**Sparrow Keys**](https://marketplace.visualstudio.com/items?itemName=thisismanta.sparrow-keys).
+- Removed `openPackage` command in favor of [**Sparrow Keys**](https://marketplace.visualstudio.com/items?itemName=thisismanta.sparrow-keys).
+
 ## 4.1.0
 - Amended `openSimilar` command so that it prompts a file picker dialog.
 
