@@ -1,3 +1,7 @@
+## 5.1.0
+- Fixed stop processing when a non-existing file was found.
+- Added support of **Webpack** loader.
+
 ## 5.0.0
 - Removed `openRecent` command in favor of [**Sparrow Keys**](https://marketplace.visualstudio.com/items?itemName=thisismanta.sparrow-keys).
 - Removed `openSimilar` command in favor of [**Sparrow Keys**](https://marketplace.visualstudio.com/items?itemName=thisismanta.sparrow-keys).
