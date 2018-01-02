@@ -63,7 +63,7 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 					destination = destination + '.jsx'
 
 				} else {
-					return null
+					continue
 				}
 
 				links.push(new vscode.DocumentLink(stub.span, vscode.Uri.file(destination)))
