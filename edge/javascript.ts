@@ -9,10 +9,8 @@ export const nodeAPIs = new RegExp('^(addon|assert|buffer|child_process|cluster|
 const nodeVers = String(cp.execSync('node -v', { encoding: 'utf-8' })).trim()
 export const createUriForNodeAPI = (name: string) => vscode.Uri.parse(`https://nodejs.org/dist/${nodeVers}/docs/api/${name}.html`)
 
-interface Stub {
-	span: vscode.Range
-	path: string
-	node: any
+interface Stub extends vscode.DocumentLink {
+	coldPath: string
 }
 
 export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vscode.ImplementationProvider {
@@ -28,7 +26,10 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 
 		const imports: Stub[] = root.program.body
 			.filter(node => node.type === 'ImportDeclaration' && node.source.type === 'StringLiteral' && node.source.value)
-			.map(node => ({ span: createRange(node.source.loc), path: node.source.value, node }))
+			.map(node => ({
+				range: createRange(node.source.loc),
+				coldPath: node.source.value,
+			} as Stub))
 
 		const requires: Stub[] = findNodes(root, node =>
 			_.get(node, 'type') === 'CallExpression' &&
@@ -36,13 +37,27 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 			_.get(node, 'callee.name') === 'require' &&
 			_.has(node, 'arguments') &&
 			_.get(node, 'arguments.0.type') === 'StringLiteral')
-			.map(node => ({ span: createRange(node.arguments[0].loc), path: node.arguments[0].value, node }))
+			.map(node => ({
+				range: createRange(node.arguments[0].loc),
+				coldPath: node.arguments[0].value,
+			} as Stub))
+			.map(stub => {
+				const pathRank = stub.coldPath.lastIndexOf('!') + 1
+				if (pathRank > 0) {
+					return {
+						range: new vscode.Range(stub.range.start.translate({ characterDelta: pathRank }), stub.range.end),
+						coldPath: stub.coldPath.substring(pathRank)
+					}
+				}
+
+				return stub
+			})
 
 		const links: vscode.DocumentLink[] = []
 
 		{ // Electrify imported files
 			const stubs = [...imports, ...requires]
-				.filter(stub => stub.path.startsWith('.'))
+				.filter(stub => stub.coldPath.startsWith('.'))
 
 			for (let stub of stubs) {
 				// Stop processing if it is cancelled
@@ -50,35 +65,39 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 					return null
 				}
 
-				let destination = fp.resolve(fp.dirname(document.fileName), stub.path)
-				if (fs.existsSync(destination)) {
-					if (fs.lstatSync(destination).isDirectory() && fs.existsSync(fp.join(destination, 'index.js'))) {
-						destination = fp.join(destination, 'index.js')
+				const warmPath = fp.resolve(fp.dirname(document.fileName), stub.coldPath)
+
+				if (fs.existsSync(warmPath)) {
+					if (fs.lstatSync(warmPath).isDirectory() && fs.existsSync(fp.join(warmPath, 'index.js'))) {
+						stub.target = vscode.Uri.file(fp.join(warmPath, 'index.js'))
+
+					} else {
+						stub.target = vscode.Uri.file(warmPath)
 					}
 
-				} else if (fs.existsSync(destination + '.js')) {
-					destination = destination + '.js'
+				} else if (fs.existsSync(warmPath + '.js')) {
+					stub.target = vscode.Uri.file(warmPath + '.js')
 
-				} else if (fs.existsSync(destination + '.jsx')) {
-					destination = destination + '.jsx'
+				} else if (fs.existsSync(warmPath + '.jsx')) {
+					stub.target = vscode.Uri.file(warmPath + '.jsx')
 
 				} else {
 					continue
 				}
 
-				links.push(new vscode.DocumentLink(stub.span, vscode.Uri.file(destination)))
+				links.push(stub)
 			}
 		}
 
 		{ // Electrify function-called files
-			const calls: { span: vscode.Range, path: string }[] = _.flatten(findNodes(root,
+			const calls: Stub[] = _.flatten(findNodes(root,
 				node =>
 					_.get(node, 'type') === 'CallExpression' &&
 					node.arguments.length > 0,
 				node =>
 					node.arguments
 						.filter(node => node.type === 'StringLiteral' && node.value.startsWith('./'))
-						.map(node => ({ span: createRange(node.loc), path: node.value }))
+						.map(node => ({ range: createRange(node.loc), coldPath: node.value } as Stub))
 			))
 
 			for (let stub of calls) {
@@ -87,24 +106,27 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 					return null
 				}
 
-				let destination = fp.resolve(fp.dirname(document.fileName), stub.path)
-				if (fs.existsSync(destination) && fs.lstatSync(destination).isFile()) {
-					links.push(new vscode.DocumentLink(stub.span, vscode.Uri.file(destination)))
+				const warmPath = fp.resolve(fp.dirname(document.fileName), stub.coldPath)
+
+				if (fs.existsSync(warmPath) && fs.lstatSync(warmPath).isFile()) {
+					stub.target = vscode.Uri.file(warmPath)
+					links.push(stub)
 				}
 			}
 		}
 
 		{ // Electrify Node.js APIs
 			[...imports, ...requires]
-				.filter(stub => nodeAPIs.test(stub.path))
+				.filter(stub => nodeAPIs.test(stub.coldPath))
 				.forEach(stub => {
-					links.push(new vscode.DocumentLink(stub.span, createUriForNodeAPI(stub.path)))
+					stub.target = createUriForNodeAPI(stub.coldPath)
+					links.push(stub)
 				})
 		}
 
 		{ // Electrify NPM modules
 			const stubs = [...imports, ...requires]
-				.filter(stub => nodeAPIs.test(stub.path) === false && stub.path.startsWith('.') === false)
+				.filter(stub => nodeAPIs.test(stub.coldPath) === false && stub.coldPath.startsWith('.') === false)
 
 			for (let stub of stubs) {
 				// Stop processing if it is cancelled
@@ -112,9 +134,9 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 					return null
 				}
 
-				const uri = createUriForNPMModule(stub.path, rootPath)
+				const uri = createUriForNPMModule(stub.coldPath, rootPath)
 				if (uri !== null) {
-					links.push(new vscode.DocumentLink(stub.span, uri))
+					links.push(new vscode.DocumentLink(stub.range, uri))
 				}
 			}
 		}
