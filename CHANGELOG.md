@@ -1,3 +1,7 @@
+## 5.2.0
+- Fixed support of **JavaScript**: ambiguous files and directories.
+- Added support of **TypeScript**: files.
+
 ## 5.1.0
 - Fixed stop processing when a non-existing file was found.
 - Added support of **Webpack** loader.

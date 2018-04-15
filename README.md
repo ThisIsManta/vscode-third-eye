@@ -41,6 +41,9 @@ Currently, the extension supports the following patterns:
   ```
 - **TypeScript** and **TypeScript React**
   ```typescript
+  import * as named from './file.js'
+  import './file.js'
+
   // This will open https://nodejs.org/api/fs.html in your browser and so does apply to all native Node.js APIs.
   import * as named from 'fs'
 

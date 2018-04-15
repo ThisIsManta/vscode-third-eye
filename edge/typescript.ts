@@ -18,20 +18,28 @@ export default class TypeScript implements vscode.DocumentLinkProvider {
 		const links: vscode.DocumentLink[] = []
 
 		root.forEachChild(node => {
-			if (node.kind === ts.SyntaxKind.ImportDeclaration) {
-				const name: string = _.get(node, 'moduleSpecifier.text')
-				if (name.startsWith('.')) {
-					return null
-				}
+			if (token && token.isCancellationRequested === true) {
+				return undefined
+			}
 
+			if (node.kind === ts.SyntaxKind.ImportDeclaration) {
 				const lead: number = _.result(node, 'moduleSpecifier.getStart')
 				const stop: number = _.result(node, 'moduleSpecifier.getEnd')
 				const span = new vscode.Range(getPosition(lead + 1), getPosition(stop - 1))
-				if (js.nodeAPIs.test(name)) {
-					links.push(new vscode.DocumentLink(span, js.createUriForNodeAPI(name)))
+
+				const relativePath: string = _.get(node, 'moduleSpecifier.text')
+				if (relativePath.startsWith('.')) {
+					const fullPath = js.getImportFullPath(document.fileName, relativePath)
+					if (!fullPath) {
+						return undefined
+					}
+					links.push(new vscode.DocumentLink(span, vscode.Uri.file(fullPath)))
+
+				} else if (js.nodeAPIs.test(relativePath)) {
+					links.push(new vscode.DocumentLink(span, js.createUriForNodeAPI(relativePath)))
 
 				} else {
-					links.push(new vscode.DocumentLink(span, js.createUriForNPMModule(name, rootPath)))
+					links.push(new vscode.DocumentLink(span, js.createUriForNPMModule(relativePath, rootPath)))
 				}
 			}
 		})

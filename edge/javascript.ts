@@ -65,27 +65,11 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 					return null
 				}
 
-				const warmPath = fp.resolve(fp.dirname(document.fileName), stub.coldPath)
-
-				if (fs.existsSync(warmPath)) {
-					if (fs.lstatSync(warmPath).isDirectory() && fs.existsSync(fp.join(warmPath, 'index.js'))) {
-						stub.target = vscode.Uri.file(fp.join(warmPath, 'index.js'))
-
-					} else {
-						stub.target = vscode.Uri.file(warmPath)
-					}
-
-				} else if (fs.existsSync(warmPath + '.js')) {
-					stub.target = vscode.Uri.file(warmPath + '.js')
-
-				} else if (fs.existsSync(warmPath + '.jsx')) {
-					stub.target = vscode.Uri.file(warmPath + '.jsx')
-
-				} else {
-					continue
+				const warmPath = getImportFullPath(document.fileName, stub.coldPath)
+				if (warmPath) {
+					stub.target = vscode.Uri.file(warmPath)
+					links.push(stub)
 				}
-
-				links.push(stub)
 			}
 		}
 
@@ -255,4 +239,39 @@ function checkIfBetween(location: { start: { line: number, column: number }, end
 		location.start.line - 1 <= position.line && position.line <= location.end.line - 1 &&
 		location.start.column <= position.character && position.character <= location.end.column
 	)
+}
+
+function getSupportedExtensions(currentFullPath: string) {
+	return fp.extname(currentFullPath) === '.ts' ? ['.ts', '.tsx', '.js', '.jsx'] : ['.js', '.jsx']
+}
+
+// Note that this function is copied from eslint-plugin-levitate/edge/use-import-name-after-file-or-directory-name.js
+export function getImportFullPath(currentFullPath: string, importRelativePath: string) {
+	const supportedExtensions = getSupportedExtensions(currentFullPath)
+
+	const fullPath = fp.resolve(fp.dirname(currentFullPath), importRelativePath)
+	if (fp.extname(fullPath) === '') {
+		for (const extension of supportedExtensions) {
+			if (fs.existsSync(fullPath + extension)) {
+				return fullPath + extension
+			}
+		}
+	}
+
+	if (fs.existsSync(fullPath)) {
+		if (fs.lstatSync(fullPath).isDirectory()) {
+			for (const extension of supportedExtensions) {
+				const actualPath = fp.join(fullPath, 'index' + extension)
+				if (fs.existsSync(actualPath)) {
+					return actualPath
+				}
+			}
+
+		} else {
+			return fullPath
+		}
+
+	} else {
+		return null
+	}
 }
