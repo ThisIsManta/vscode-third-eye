@@ -17,8 +17,6 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 	static support = ['javascript', 'javascriptreact'].map(name => ({ language: name }))
 
 	provideDocumentLinks(document: vscode.TextDocument, cancellationToken: vscode.CancellationToken) {
-		const rootPath = vscode.workspace.getWorkspaceFolder(document.uri).uri.fsPath
-
 		let root = parseTreeOrNull(document)
 		if (root === null) {
 			return null
@@ -74,13 +72,15 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 		}
 
 		{ // Electrify function-called files
+			const FILE_PATH_PATTERN = /^\.?\.?\//
+
 			const calls: Stub[] = _.flatten(findNodes(root,
 				node =>
 					_.get(node, 'type') === 'CallExpression' &&
 					node.arguments.length > 0,
 				node =>
 					node.arguments
-						.filter(node => node.type === 'StringLiteral' && node.value.startsWith('./'))
+						.filter(node => node.type === 'StringLiteral' && FILE_PATH_PATTERN.test(node.value))
 						.map(node => ({ range: createRange(node.loc), coldPath: node.value } as Stub))
 			))
 
@@ -108,7 +108,11 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 				})
 		}
 
-		{ // Electrify NPM modules
+		// Electrify NPM modules
+		const rootLink = vscode.workspace.getWorkspaceFolder(document.uri)
+		if (rootLink) {
+			const rootPath = rootLink.uri.fsPath
+
 			const stubs = [...imports, ...requires]
 				.filter(stub => nodeAPIs.test(stub.coldPath) === false && stub.coldPath.startsWith('.') === false)
 

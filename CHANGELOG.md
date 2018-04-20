@@ -1,3 +1,5 @@
+- Fixed missing some static file links.
+
 ## 5.2.0
 - Fixed support of **JavaScript**: ambiguous files and directories.
 - Added support of **TypeScript**: files.
