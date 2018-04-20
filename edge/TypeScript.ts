@@ -4,7 +4,7 @@ import * as cp from 'child_process'
 import * as vscode from 'vscode'
 import * as _ from 'lodash'
 import * as ts from 'typescript'
-import * as js from './javascript'
+import * as JavaScript from './JavaScript'
 
 import FileWatcher from './FileWatcher'
 
@@ -29,17 +29,17 @@ export default class TypeScript implements vscode.DocumentLinkProvider {
 
 				const relativePath: string = _.get(node, 'moduleSpecifier.text')
 				if (relativePath.startsWith('.')) {
-					const fullPath = js.getImportFullPath(document.fileName, relativePath)
+					const fullPath = JavaScript.getImportFullPath(document.fileName, relativePath)
 					if (!fullPath) {
 						return undefined
 					}
 					links.push(new vscode.DocumentLink(span, vscode.Uri.file(fullPath)))
 
-				} else if (js.nodeAPIs.test(relativePath)) {
-					links.push(new vscode.DocumentLink(span, js.createUriForNodeAPI(relativePath)))
+				} else if (JavaScript.nodeAPIs.test(relativePath)) {
+					links.push(new vscode.DocumentLink(span, JavaScript.createUriForNodeAPI(relativePath)))
 
 				} else {
-					links.push(new vscode.DocumentLink(span, js.createUriForNPMModule(relativePath, rootPath)))
+					links.push(new vscode.DocumentLink(span, JavaScript.createUriForNPMModule(relativePath, rootPath)))
 				}
 			}
 		})

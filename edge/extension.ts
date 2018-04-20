@@ -1,9 +1,9 @@
 import * as vscode from 'vscode'
 
 import Go from './go'
-import JavaScript from './javascript'
-import TypeScript from './typescript'
-import Stylus from './stylus'
+import JavaScript from './JavaScript'
+import TypeScript from './TypeScript'
+import Stylus from './Stylus'
 import FileWatcher from './FileWatcher'
 
 export function activate(context: vscode.ExtensionContext) {
