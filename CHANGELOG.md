@@ -1,3 +1,4 @@
+- Added the file watcher so it determines a file/directory existence faster.
 - Fixed missing some static file links.
 
 ## 5.2.0

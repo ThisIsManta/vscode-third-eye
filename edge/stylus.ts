@@ -4,6 +4,8 @@ import * as vscode from 'vscode'
 import * as Stylus from 'stylus'
 import { findChildNodes } from 'stylus-supremacy'
 
+import FileWatcher from './FileWatcher'
+
 export default class StylusLinker implements vscode.DocumentLinkProvider {
 	static support = { language: 'stylus' }
 
@@ -26,16 +28,16 @@ export default class StylusLinker implements vscode.DocumentLinkProvider {
 			}
 
 			const node = nodes[index].path
-			
+
 			const highlight = new vscode.Range(node.lineno - 1, node.column, node.lineno - 1, node.column + node.nodes[0].val.length)
-			
+
 			let destination = fp.resolve(fp.dirname(document.fileName), node.nodes[0].val)
-			if (fs.existsSync(destination)) {
-				if (fs.lstatSync(destination).isDirectory() && fs.existsSync(fp.join(destination, 'index.styl'))) {
+			if (FileWatcher.has(destination)) {
+				if (FileWatcher.has(destination, FileWatcher.DIRECTORY) && FileWatcher.has(fp.join(destination, 'index.styl'))) {
 					destination = fp.join(destination, 'index.styl')
 				}
 
-			} else if (fs.existsSync(destination + '.styl')) {
+			} else if (FileWatcher.has(destination + '.styl', FileWatcher.FILE)) {
 				destination = destination + '.styl'
 
 			} else {
@@ -50,5 +52,11 @@ export default class StylusLinker implements vscode.DocumentLinkProvider {
 }
 
 function checkImportStatement(node) {
-	return node instanceof Stylus.nodes.Import && node.path instanceof Stylus.nodes.Expression && node.path.nodes.length > 0 && node.path.nodes[0] instanceof Stylus.nodes.String && node.path.nodes[0].val.length > 0
+	return (
+		node instanceof Stylus.nodes.Import &&
+		node.path instanceof Stylus.nodes.Expression &&
+		node.path.nodes.length > 0 &&
+		node.path.nodes[0] instanceof Stylus.nodes.String &&
+		node.path.nodes[0].val.length > 0
+	)
 }

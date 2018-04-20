@@ -4,6 +4,7 @@ import Go from './go'
 import JavaScript from './javascript'
 import TypeScript from './typescript'
 import Stylus from './stylus'
+import FileWatcher from './FileWatcher'
 
 export function activate(context: vscode.ExtensionContext) {
 	const go = new Go()
@@ -18,4 +19,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const stylus = new Stylus()
 	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(Stylus.support, stylus))
+}
+
+export function deactivate() {
+	FileWatcher.dispose()
 }

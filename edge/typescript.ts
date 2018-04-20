@@ -2,11 +2,11 @@ import * as fs from 'fs'
 import * as fp from 'path'
 import * as cp from 'child_process'
 import * as vscode from 'vscode'
-import * as babylon from 'babylon'
 import * as _ from 'lodash'
 import * as ts from 'typescript'
 import * as js from './javascript'
 
+import FileWatcher from './FileWatcher'
 
 export default class TypeScript implements vscode.DocumentLinkProvider {
 	static support = ['typescript', 'typescriptreact'].map(name => ({ language: name }))

@@ -5,6 +5,8 @@ import * as vscode from 'vscode'
 import * as babylon from 'babylon'
 import * as _ from 'lodash'
 
+import FileWatcher from './FileWatcher'
+
 export const nodeAPIs = new RegExp('^(addon|assert|buffer|child_process|cluster|console|crypto|dgram|dns|domain|events|fs|http|http|https|net|os|path|punycode|querystring|readline|repl|stream|string_decoder|timers|tls|tty|url|util|v8|vm|zlib)$')
 const nodeVers = String(cp.execSync('node -v', { encoding: 'utf-8' })).trim()
 export const createUriForNodeAPI = (name: string) => vscode.Uri.parse(`https://nodejs.org/dist/${nodeVers}/docs/api/${name}.html`)
@@ -13,7 +15,7 @@ interface Stub extends vscode.DocumentLink {
 	coldPath: string
 }
 
-export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vscode.ImplementationProvider {
+export default class JavaScript implements vscode.DocumentLinkProvider, vscode.ImplementationProvider {
 	static support = ['javascript', 'javascriptreact'].map(name => ({ language: name }))
 
 	provideDocumentLinks(document: vscode.TextDocument, cancellationToken: vscode.CancellationToken) {
@@ -92,7 +94,7 @@ export default class JavaScriptLinker implements vscode.DocumentLinkProvider, vs
 
 				const warmPath = fp.resolve(fp.dirname(document.fileName), stub.coldPath)
 
-				if (fs.existsSync(warmPath) && fs.lstatSync(warmPath).isFile()) {
+				if (FileWatcher.has(warmPath, FileWatcher.FILE)) {
 					stub.target = vscode.Uri.file(warmPath)
 					links.push(stub)
 				}
@@ -206,7 +208,7 @@ function createRange(location) {
 
 function getNPMInfoOrNull(name: string, rootPath: string) {
 	const path = fp.join(rootPath, 'node_modules', name, 'package.json')
-	if (fs.existsSync(path)) {
+	if (FileWatcher.has(path)) {
 		try {
 			return JSON.parse(fs.readFileSync(path, 'utf-8'))
 
@@ -256,17 +258,17 @@ export function getImportFullPath(currentFullPath: string, importRelativePath: s
 	const fullPath = fp.resolve(fp.dirname(currentFullPath), importRelativePath)
 	if (fp.extname(fullPath) === '') {
 		for (const extension of supportedExtensions) {
-			if (fs.existsSync(fullPath + extension)) {
+			if (FileWatcher.has(fullPath + extension)) {
 				return fullPath + extension
 			}
 		}
 	}
 
-	if (fs.existsSync(fullPath)) {
-		if (fs.lstatSync(fullPath).isDirectory()) {
+	if (FileWatcher.has(fullPath)) {
+		if (FileWatcher.has(fullPath, FileWatcher.DIRECTORY)) {
 			for (const extension of supportedExtensions) {
 				const actualPath = fp.join(fullPath, 'index' + extension)
-				if (fs.existsSync(actualPath)) {
+				if (FileWatcher.has(actualPath)) {
 					return actualPath
 				}
 			}
