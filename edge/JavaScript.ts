@@ -2,7 +2,7 @@ import * as fs from 'fs'
 import * as fp from 'path'
 import * as cp from 'child_process'
 import * as vscode from 'vscode'
-import * as babylon from 'babylon'
+import * as ts from 'typescript'
 import * as _ from 'lodash'
 
 import FileWatcher from './FileWatcher'
@@ -16,7 +16,7 @@ interface Stub extends vscode.DocumentLink {
 }
 
 export default class JavaScript implements vscode.DocumentLinkProvider, vscode.ImplementationProvider {
-	static support = ['javascript', 'javascriptreact'].map(name => ({ language: name }))
+	static support = ['javascript', 'javascriptreact', 'typescript', 'typescriptreact'].map(name => ({ language: name }))
 
 	provideDocumentLinks(document: vscode.TextDocument, cancellationToken: vscode.CancellationToken) {
 		let root = parseTreeOrNull(document)
@@ -24,22 +24,32 @@ export default class JavaScript implements vscode.DocumentLinkProvider, vscode.I
 			return null
 		}
 
-		const imports: Stub[] = root.program.body
-			.filter(node => node.type === 'ImportDeclaration' && node.source.type === 'StringLiteral' && node.source.value)
-			.map(node => ({
-				range: createRange(node.source.loc),
-				coldPath: node.source.value,
-			} as Stub))
+		const imports: Stub[] = []
+		root.forEachChild(node => {
+			if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+				imports.push({
+					range: createRange(node.moduleSpecifier, document),
+					coldPath: node.moduleSpecifier.text,
+				})
+			}
+		})
 
-		const requires: Stub[] = findNodes(root, node =>
-			_.get(node, 'type') === 'CallExpression' &&
-			_.get(node, 'callee.type') === 'Identifier' &&
-			_.get(node, 'callee.name') === 'require' &&
-			_.has(node, 'arguments') &&
-			_.get(node, 'arguments.0.type') === 'StringLiteral')
+		const requires: Stub[] = findNodes(
+			root,
+			node => {
+				if (
+					ts.isCallExpression(node) &&
+					ts.isIdentifier(node.expression) &&
+					node.expression.text === 'require' &&
+					node.arguments.length === 1 &&
+					ts.isStringLiteral(node.arguments[0])
+				) {
+					return node.arguments[0] as ts.StringLiteral
+				}
+			})
 			.map(node => ({
-				range: createRange(node.arguments[0].loc),
-				coldPath: node.arguments[0].value,
+				range: createRange(node, document),
+				coldPath: node.text,
 			} as Stub))
 			.map(stub => {
 				const pathRank = stub.coldPath.lastIndexOf('!') + 1
@@ -73,20 +83,22 @@ export default class JavaScript implements vscode.DocumentLinkProvider, vscode.I
 			}
 		}
 
-		{ // Electrify function-called files
+		{ // Electrify string-of-path files
 			const FILE_PATH_PATTERN = /^\.?\.?\//
 
-			const calls: Stub[] = _.flatten(findNodes(root,
-				node =>
-					_.get(node, 'type') === 'CallExpression' &&
-					node.arguments.length > 0,
-				node =>
-					node.arguments
-						.filter(node => node.type === 'StringLiteral' && FILE_PATH_PATTERN.test(node.value))
-						.map(node => ({ range: createRange(node.loc), coldPath: node.value } as Stub))
-			))
+			const paths: Stub[] = findNodes(root,
+				node => {
+					if (ts.isStringLiteral(node) && FILE_PATH_PATTERN.test(node.text)) {
+						return node
+					}
+				})
+				.map(node => ({
+					range: createRange(node, document),
+					coldPath: node.text
+				}))
+				.filter(stub => _.some(requires, stub) === false)
 
-			for (let stub of calls) {
+			for (let stub of paths) {
 				// Stop processing if it is cancelled
 				if (cancellationToken && cancellationToken.isCancellationRequested === true) {
 					return null
@@ -141,15 +153,33 @@ export default class JavaScript implements vscode.DocumentLinkProvider, vscode.I
 		}
 
 		let name: string
-		const imports = root.program.body
-			.filter(node => node.type === 'ImportDeclaration' && node.source.type === 'StringLiteral' && node.source.value && checkIfBetween(node.source.loc, position))
-			.map(node => node.source.value)
-		name = _.first(imports)
+		for (const node of root.statements) {
+			if (
+				ts.isImportDeclaration(node) &&
+				ts.isStringLiteral(node.moduleSpecifier) &&
+				checkIfBetween(node.moduleSpecifier, position, document)
+			) {
+				name = node.moduleSpecifier.text
+				break
+			}
+		}
 
 		if (!name) {
-			const requires = findNodes(root, node => node.type === 'CallExpression' && _.get(node, 'callee.name') === 'require' && _.get(node, 'arguments.0.type') === 'StringLiteral' && checkIfBetween(node.arguments[0].loc, position))
-				.map(node => _.get(node, 'arguments.0.value'))
-			name = _.first(requires) as string
+			const requires = findNodes(
+				root,
+				node => {
+					if (
+						ts.isCallExpression(node) &&
+						ts.isIdentifier(node.expression) &&
+						node.expression.text === 'require' &&
+						node.arguments.length === 1 &&
+						ts.isStringLiteral(node.arguments[0]) &&
+						checkIfBetween(node.arguments[0], position, document)
+					) {
+						return node.arguments[0] as ts.StringLiteral
+					}
+				})
+			name = requires.length > 0 && requires[0].text
 		}
 
 		if (!name) {
@@ -159,51 +189,65 @@ export default class JavaScript implements vscode.DocumentLinkProvider, vscode.I
 		const rootPath = vscode.workspace.getWorkspaceFolder(document.uri).uri.fsPath
 		const pack = getNPMInfoOrNull(name, rootPath)
 		if (_.has(pack, 'main')) {
-			return new vscode.Location(vscode.Uri.file(fp.resolve(fp.join(rootPath, 'node_modules', name), pack.main)), new vscode.Position(0, 0))
+			return new vscode.Location(
+				vscode.Uri.file(fp.resolve(fp.join(rootPath, 'node_modules', name), pack.main)),
+				new vscode.Position(0, 0)
+			)
 		}
 	}
 }
 
 function parseTreeOrNull(document: vscode.TextDocument) {
 	try {
-		return babylon.parse(document.getText(), {
-			sourceType: 'module',
-			plugins: ['jsx', 'flow', 'doExpressions', 'objectRestSpread', 'decorators', 'classProperties', 'exportExtensions', 'asyncGenerators', 'functionBind', 'functionSent', 'dynamicImport',]
-		})
+		return ts.createSourceFile('temp', document.getText(), ts.ScriptTarget.ESNext, false)
 
 	} catch (ex) {
 		return null
 	}
 }
 
-function findNodes(node, filter: (node) => boolean, selector = node => node, results = []): any[] {
-	if (filter(node) === true) {
-		results.push(selector(node))
+function findNodes<T extends ts.Node>(
+	node: ts.Node,
+	filter: (node: ts.Node) => T,
+	visitedNodes = new Set<ts.Node>(), // Internal
+	outputNodes: Array<T> = [] // Internal
+) {
+	if (visitedNodes.has(node)) {
+		return outputNodes
+	} else {
+		visitedNodes.add(node)
+	}
+
+	const result = filter(node)
+	if (result !== undefined) {
+		outputNodes.push(result)
 
 	} else {
-		const keys = Object.getOwnPropertyNames(node)
-		for (let index = 0; index < keys.length; index++) {
-			const name = keys[index]
-			if (name === 'loc') {
-				continue
-			}
-
+		for (let name of Object.getOwnPropertyNames(node)) {
 			const prop = node[name]
-			if (_.isArray(prop)) {
+			if (_.isArrayLike(prop)) {
 				_.forEach(prop, innerNode => {
-					findNodes(innerNode, filter, selector, results)
+					findNodes(innerNode, filter, visitedNodes, outputNodes)
 				})
 
-			} else if (_.isObject(prop) && _.has(prop, 'type')) {
-				findNodes(prop, filter, selector, results)
+			} else if (_.isObject(prop) && _.has(prop, 'kind')) {
+				findNodes(prop, filter, visitedNodes, outputNodes)
 			}
 		}
 	}
-	return results
+	return outputNodes
 }
 
-function createRange(location) {
-	return new vscode.Range(location.start.line - 1, location.start.column + 1, location.end.line - 1, location.end.column - 1)
+function createRange(node: ts.Node, document: vscode.TextDocument) {
+	const range = new vscode.Range(
+		document.positionAt(node.pos),
+		document.positionAt(node.end),
+	)
+	const text = document.getText(range)
+	return new vscode.Range(
+		range.start.translate({ characterDelta: text.length - text.replace(/^(\s|'|")*/, '').length }),
+		range.end.translate({ characterDelta: -text.length + text.replace(/(\s|'|")*$/, '').length }),
+	)
 }
 
 function getNPMInfoOrNull(name: string, rootPath: string) {
@@ -239,16 +283,20 @@ export const createUriForNPMModule: (name: string, rootPath: string) => vscode.U
 	return null
 }, (name: string, rootPath: string) => rootPath + '|' + name)
 
-function checkIfBetween(location: { start: { line: number, column: number }, end: { line: number, column: number } }, position: vscode.Position) {
-	return (
-		location &&
-		location.start.line - 1 <= position.line && position.line <= location.end.line - 1 &&
-		location.start.column <= position.character && position.character <= location.end.column
-	)
+function checkIfBetween(location: ts.TextRange, position: vscode.Position, document: vscode.TextDocument) {
+	if (!location) return false
+
+	const offset = document.offsetAt(position)
+	return location.pos >= offset && offset <= location.end
 }
 
 function getSupportedExtensions(currentFullPath: string) {
-	return fp.extname(currentFullPath) === '.ts' ? ['.ts', '.tsx', '.js', '.jsx'] : ['.js', '.jsx']
+	const workName = fp.extname(currentFullPath)
+	return _.chain(['.ts', '.js'])
+		.map(name => workName.endsWith('x') ? [name + 'x', name] : [name])
+		.flatten()
+		.sortBy(name => workName.startsWith('.j') && name.startsWith('.j') ? 0 : 1)
+		.value() as Array<string>
 }
 
 // Note that this function is copied from eslint-plugin-levitate/edge/use-import-name-after-file-or-directory-name.js
@@ -256,13 +304,6 @@ export function getImportFullPath(currentFullPath: string, importRelativePath: s
 	const supportedExtensions = getSupportedExtensions(currentFullPath)
 
 	const fullPath = fp.resolve(fp.dirname(currentFullPath), importRelativePath)
-	if (fp.extname(fullPath) === '') {
-		for (const extension of supportedExtensions) {
-			if (FileWatcher.has(fullPath + extension)) {
-				return fullPath + extension
-			}
-		}
-	}
 
 	if (FileWatcher.has(fullPath)) {
 		if (FileWatcher.has(fullPath, FileWatcher.DIRECTORY)) {
@@ -272,12 +313,16 @@ export function getImportFullPath(currentFullPath: string, importRelativePath: s
 					return actualPath
 				}
 			}
-
-		} else {
-			return fullPath
 		}
 
-	} else {
-		return null
+		return fullPath
 	}
+
+	for (const extension of supportedExtensions) {
+		if (FileWatcher.has(fullPath + extension)) {
+			return fullPath + extension
+		}
+	}
+
+	return null
 }

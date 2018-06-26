@@ -1,5 +1,7 @@
+## 5.3.0
 - Added the file watcher so it determines a file/directory existence faster.
 - Fixed missing some static file links.
+- Fixed support of **TypeScript**: compatibility issues with **JavaScript** and vice versa.
 
 ## 5.2.0
 - Fixed support of **JavaScript**: ambiguous files and directories.

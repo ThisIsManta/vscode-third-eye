@@ -6,7 +6,7 @@
 	"publisher": "thisismanta",
 	"license": "ISC",
 	"categories": [
-		"Languages"
+		"Programming Languages"
 	],
 	"keywords": [
 		"jump",
@@ -42,15 +42,14 @@
 		"postversion": "git push --tags --quiet origin master:master"
 	},
 	"devDependencies": {
-		"@types/lodash": "^4.14.107",
-		"@types/node": "^8.0.24",
-		"vscode": "^1.1.6"
+		"@types/lodash": "^4.14.110",
+		"@types/node": "^8.10.20",
+		"vscode": "^1.1.18"
 	},
 	"dependencies": {
-		"babylon": "^6.18.0",
-		"lodash": "^4.17.5",
+		"lodash": "^4.17.10",
 		"stylus": "^0.54.5",
-		"stylus-supremacy": "^1.6.4",
-		"typescript": "^2.7.1"
+		"stylus-supremacy": "^2.11.2",
+		"typescript": "^2.9.2"
 	}
 }
