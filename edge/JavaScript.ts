@@ -84,11 +84,11 @@ export default class JavaScript implements vscode.DocumentLinkProvider, vscode.I
 		}
 
 		{ // Electrify string-of-path files
-			const FILE_PATH_PATTERN = /^\.?\.?\//
+			const RELATIVE_PATH_PATTERN = /^\.\.?\//
 
 			const paths: Stub[] = findNodes(root,
 				node => {
-					if (ts.isStringLiteral(node) && FILE_PATH_PATTERN.test(node.text)) {
+					if (ts.isStringLiteral(node) && RELATIVE_PATH_PATTERN.test(node.text)) {
 						return node
 					}
 				})
