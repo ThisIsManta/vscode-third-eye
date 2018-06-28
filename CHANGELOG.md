@@ -1,3 +1,7 @@
+## 5.3.1
+- Fixed support of **JavaScript React**: unable to electrify JSX file paths from JS files.
+- Fixed support of **JavaScript**: wrong relative path pattern.
+
 ## 5.3.0
 - Added the file watcher so it determines a file/directory existence faster.
 - Fixed missing some static file links.

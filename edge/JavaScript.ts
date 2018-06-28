@@ -291,11 +291,10 @@ function checkIfBetween(location: ts.TextRange, position: vscode.Position, docum
 }
 
 function getSupportedExtensions(currentFullPath: string) {
-	const workName = fp.extname(currentFullPath)
-	return _.chain(['.ts', '.js'])
-		.map(name => workName.endsWith('x') ? [name + 'x', name] : [name])
-		.flatten()
-		.sortBy(name => workName.startsWith('.j') && name.startsWith('.j') ? 0 : 1)
+	const currentFileName = fp.extname(currentFullPath)
+	return _.chain(['.js', '.jsx', '.ts', '.tsx'])
+		.sortBy(name => currentFileName.startsWith('.j') && name.startsWith('.j') ? 0 : 1)
+		.sortBy(name => currentFileName.endsWith('x') && name.endsWith('x') ? 0 : 1)
 		.value() as Array<string>
 }
 
