@@ -291,11 +291,8 @@ function checkIfBetween(location: ts.TextRange, position: vscode.Position, docum
 }
 
 function getSupportedExtensions(currentFullPath: string) {
-	const currentFileName = fp.extname(currentFullPath)
-	return _.chain(['.js', '.jsx', '.ts', '.tsx'])
-		.sortBy(name => currentFileName.startsWith('.j') && name.startsWith('.j') ? 0 : 1)
-		.sortBy(name => currentFileName.endsWith('x') && name.endsWith('x') ? 0 : 1)
-		.value() as Array<string>
+	const currentExtension = fp.extname(currentFullPath)
+	return _.sortBy(['.ts', '.tsx', '.js', '.jsx'], extension => currentExtension.endsWith('x') && extension.endsWith('x') ? 0 : 1)
 }
 
 // Note that this function is copied from eslint-plugin-levitate/edge/use-import-name-after-file-or-directory-name.js

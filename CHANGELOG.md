@@ -1,3 +1,6 @@
+## 5.3.2
+- Fixed support of **JavaScript**: opening **TypeScript** files first.
+
 ## 5.3.1
 - Fixed support of **JavaScript React**: unable to electrify JSX file paths from JS files.
 - Fixed support of **JavaScript**: wrong relative path pattern.
