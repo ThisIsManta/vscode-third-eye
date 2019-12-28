@@ -230,7 +230,7 @@ function findNodes<T extends ts.Node>(
 					findNodes(innerNode, filter, visitedNodes, outputNodes)
 				})
 
-			} else if (_.isObject(prop) && _.has(prop, 'kind')) {
+			} else if (typeof prop === 'object' && _.has(prop, 'kind')) {
 				findNodes(prop, filter, visitedNodes, outputNodes)
 			}
 		}
@@ -265,7 +265,7 @@ function getNPMInfoOrNull(name: string, rootPath: string) {
 
 export const createUriForNPMModule: (name: string, rootPath: string) => vscode.Uri = _.memoize((name: string, rootPath: string) => {
 	const pack = getNPMInfoOrNull(name, rootPath)
-	if (_.isObject(pack)) {
+	if (typeof pack === 'object') {
 		if (_.isString(pack.homepage)) {
 			return vscode.Uri.parse(pack.homepage)
 

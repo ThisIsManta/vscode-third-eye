@@ -27,14 +27,13 @@
 		"theme": "dark"
 	},
 	"engines": {
-		"vscode": "^1.18.0"
+		"vscode": "^1.41.0"
 	},
 	"activationEvents": [
 		"*"
 	],
 	"main": "./dist/extension",
 	"scripts": {
-		"postinstall": "node ./node_modules/vscode/bin/install",
 		"compile": "tsc --watch --project ./",
 		"vscode:prepublish": "tsc --skipLibCheck --project ./",
 		"preversion": "npm run vscode:prepublish",
@@ -42,14 +41,14 @@
 		"postversion": "git push --tags --quiet origin master:master"
 	},
 	"devDependencies": {
-		"@types/lodash": "^4.14.110",
-		"@types/node": "^8.10.20",
-		"vscode": "^1.1.18"
+		"@types/lodash": "^4.14.149",
+		"@types/node": "^12.12.22",
+		"vscode": "^1.1.36"
 	},
 	"dependencies": {
-		"lodash": "^4.17.10",
-		"stylus": "^0.54.5",
-		"stylus-supremacy": "^2.11.2",
-		"typescript": "^2.9.2"
+		"lodash": "^4.17.15",
+		"stylus": "^0.54.7",
+		"stylus-supremacy": "^2.14.0",
+		"typescript": "^3.7.4"
 	}
 }
