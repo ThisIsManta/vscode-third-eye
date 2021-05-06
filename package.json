@@ -46,7 +46,7 @@
 		"vscode": "^1.1.36"
 	},
 	"dependencies": {
-		"lodash": "^4.17.15",
+		"lodash": "^4.17.21",
 		"stylus": "^0.54.7",
 		"stylus-supremacy": "^2.14.0",
 		"typescript": "^3.7.4"
