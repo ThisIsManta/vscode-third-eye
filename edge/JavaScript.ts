@@ -3,7 +3,10 @@ import * as fp from 'path'
 import * as cp from 'child_process'
 import * as vscode from 'vscode'
 import * as ts from 'typescript'
-import * as _ from 'lodash'
+import sortBy from 'lodash/sortBy'
+import memoize from 'lodash/memoize'
+import isEqual from 'lodash/isEqual'
+import isArrayLike from 'lodash/isArrayLike'
 
 import FileWatcher from './FileWatcher'
 
@@ -96,7 +99,7 @@ export default class JavaScript implements vscode.DocumentLinkProvider, vscode.I
 					range: createRange(node, document),
 					coldPath: node.text
 				}))
-				.filter(stub => _.some(requires, stub) === false)
+				.filter(stub => requires.some(item => isEqual(item, stub)) === false)
 
 			for (let stub of paths) {
 				// Stop processing if it is cancelled
@@ -187,10 +190,10 @@ export default class JavaScript implements vscode.DocumentLinkProvider, vscode.I
 		}
 
 		const rootPath = vscode.workspace.getWorkspaceFolder(document.uri).uri.fsPath
-		const pack = getNPMInfoOrNull(name, rootPath)
-		if (_.has(pack, 'main')) {
+		const packageJson = getNPMInfoOrNull(name, rootPath)
+		if ('main' in packageJson) {
 			return new vscode.Location(
-				vscode.Uri.file(fp.resolve(fp.join(rootPath, 'node_modules', name), pack.main)),
+				vscode.Uri.file(fp.resolve(fp.join(rootPath, 'node_modules', name), packageJson.main)),
 				new vscode.Position(0, 0)
 			)
 		}
@@ -225,12 +228,13 @@ function findNodes<T extends ts.Node>(
 	} else {
 		for (let name of Object.getOwnPropertyNames(node)) {
 			const prop = node[name]
-			if (_.isArrayLike(prop)) {
-				_.forEach(prop, innerNode => {
+			if (isArrayLike(prop)) {
+				for (const key in prop) {
+					const innerNode = prop[key]
 					findNodes(innerNode, filter, visitedNodes, outputNodes)
-				})
+				}
 
-			} else if (typeof prop === 'object' && _.has(prop, 'kind')) {
+			} else if (typeof prop === 'object' && 'kind' in prop) {
 				findNodes(prop, filter, visitedNodes, outputNodes)
 			}
 		}
@@ -263,17 +267,17 @@ function getNPMInfoOrNull(name: string, rootPath: string) {
 	return null
 }
 
-export const createUriForNPMModule: (name: string, rootPath: string) => vscode.Uri = _.memoize((name: string, rootPath: string) => {
-	const pack = getNPMInfoOrNull(name, rootPath)
-	if (typeof pack === 'object') {
-		if (_.isString(pack.homepage)) {
-			return vscode.Uri.parse(pack.homepage)
+export const createUriForNPMModule: (name: string, rootPath: string) => vscode.Uri = memoize((name: string, rootPath: string) => {
+	const packageJson = getNPMInfoOrNull(name, rootPath)
+	if (typeof packageJson === 'object') {
+		if (typeof packageJson.homepage === 'string') {
+			return vscode.Uri.parse(packageJson.homepage)
 
-		} else if (_.has(pack, 'repository.url')) {
-			return vscode.Uri.parse(pack.repository.url)
+		} else if (packageJson.repository && typeof packageJson.repository.url === 'string') {
+			return vscode.Uri.parse(packageJson.repository.url)
 
-		} else if (_.isString(pack.repository) && pack.repository.includes(':') === false) {
-			return vscode.Uri.parse('https://github.com/' + pack.repository)
+		} else if (typeof packageJson.repository === 'string' && packageJson.repository.includes(':') === false) {
+			return vscode.Uri.parse('https://github.com/' + packageJson.repository)
 
 		} else {
 			return vscode.Uri.parse('https://www.npmjs.com/package/' + name)
@@ -292,7 +296,7 @@ function checkIfBetween(location: ts.TextRange, position: vscode.Position, docum
 
 function getSupportedExtensions(currentFullPath: string) {
 	const currentExtension = fp.extname(currentFullPath)
-	return _.sortBy(['.ts', '.tsx', '.js', '.jsx'], extension => currentExtension.endsWith('x') && extension.endsWith('x') ? 0 : 1)
+	return sortBy(['.ts', '.tsx', '.js', '.jsx'], extension => currentExtension.endsWith('x') && extension.endsWith('x') ? 0 : 1)
 }
 
 // Note that this function is copied from eslint-plugin-levitate/edge/use-import-name-after-file-or-directory-name.js

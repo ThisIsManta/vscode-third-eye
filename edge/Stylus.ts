@@ -1,8 +1,7 @@
-import * as fs from 'fs'
 import * as fp from 'path'
 import * as vscode from 'vscode'
 import * as Stylus from 'stylus'
-import { findChildNodes } from 'stylus-supremacy'
+import findChildNodes from 'stylus-supremacy/edge/findChildNodes'
 
 import FileWatcher from './FileWatcher'
 

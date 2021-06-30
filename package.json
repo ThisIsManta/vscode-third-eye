@@ -27,28 +27,31 @@
 		"theme": "dark"
 	},
 	"engines": {
-		"vscode": "^1.41.0"
+		"vscode": "^1.57.0"
 	},
 	"activationEvents": [
 		"*"
 	],
-	"main": "./dist/extension",
+	"main": "dist/extension.js",
 	"scripts": {
-		"compile": "tsc --watch --project ./",
-		"vscode:prepublish": "tsc --skipLibCheck --project ./",
+		"postinstall": "code --install-extension connor4312.esbuild-problem-matchers",
+		"build": "esbuild edge/extension.ts --bundle --platform=node --outfile=dist/extension.js --external:vscode --external:typescript --external:stylus --format=cjs",
+		"watch": "npm run build -- --watch --sourcemap",
+		"vscode:prepublish": "tsc --noEmit && npm run build -- --minify",
 		"preversion": "npm run vscode:prepublish",
 		"version": "vsce publish",
 		"postversion": "git push --tags --quiet origin master:master"
 	},
 	"devDependencies": {
-		"@types/lodash": "^4.14.149",
-		"@types/node": "^12.12.22",
-		"vscode": "^1.1.36"
+		"@types/lodash": "^4.14.170",
+		"@types/node": "^14.0.0",
+		"esbuild": "^0.12.12",
+		"lodash": "^4.17.21",
+		"stylus-supremacy": "^2.15.0",
+		"vscode": "^1.1.37"
 	},
 	"dependencies": {
-		"lodash": "^4.17.15",
-		"stylus": "^0.54.7",
-		"stylus-supremacy": "^2.14.0",
-		"typescript": "^3.7.4"
+		"stylus": "^0.54.8",
+		"typescript": "^4.3.4"
 	}
 }

@@ -1,3 +1,6 @@
+## 5.4.0
+- Reduced start-up time.
+
 ## 5.3.2
 - Fixed support of **JavaScript**: opening **TypeScript** files first.
 

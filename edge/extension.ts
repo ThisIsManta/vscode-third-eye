@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 
-import Go from './go'
+import Go from './Go'
 import JavaScript from './JavaScript'
 import Stylus from './Stylus'
 import FileWatcher from './FileWatcher'
