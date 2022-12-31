@@ -3,10 +3,12 @@ import * as fp from 'path'
 import * as cp from 'child_process'
 import * as vscode from 'vscode'
 import * as ts from 'typescript'
+import fetch from 'node-fetch'
 import sortBy from 'lodash/sortBy'
 import memoize from 'lodash/memoize'
 import isEqual from 'lodash/isEqual'
 import isArrayLike from 'lodash/isArrayLike'
+import trimEnd from 'lodash/trimEnd'
 
 import FileWatcher from './FileWatcher'
 
@@ -21,7 +23,7 @@ interface Stub extends vscode.DocumentLink {
 export default class JavaScript implements vscode.DocumentLinkProvider, vscode.ImplementationProvider {
 	readonly id = ['javascript', 'javascriptreact', 'typescript', 'typescriptreact']
 
-	provideDocumentLinks(document: vscode.TextDocument, cancellationToken: vscode.CancellationToken) {
+	async provideDocumentLinks(document: vscode.TextDocument, cancellationToken: vscode.CancellationToken) {
 		let root = parseTreeOrNull(document)
 		if (root === null) {
 			return null
@@ -139,7 +141,7 @@ export default class JavaScript implements vscode.DocumentLinkProvider, vscode.I
 					return null
 				}
 
-				const uri = createUriForNPMModule(stub.coldPath, rootPath)
+				const uri = await createUriForNPMModule(stub.coldPath, rootPath)
 				if (uri !== null) {
 					links.push(new vscode.DocumentLink(stub.range, uri))
 				}
@@ -259,7 +261,7 @@ interface PackageJson {
 	version: string
 	main?: string
 	homepage?: string
-	repository?: string | { url: string }
+	repository?: string | { type?: string, url: string, directory?: string }
 }
 
 function getPackageJson(name: string, rootPath: string): PackageJson | null {
@@ -275,25 +277,54 @@ function getPackageJson(name: string, rootPath: string): PackageJson | null {
 	return null
 }
 
-export const createUriForNPMModule: (name: string, rootPath: string) => vscode.Uri = memoize((name: string, rootPath: string) => {
+export const createUriForNPMModule: (name: string, rootPath: string) => Promise<vscode.Uri> = memoize(async (name: string, rootPath: string) => {
 	const packageJson = getPackageJson(name, rootPath)
 	if (packageJson === null) {
 		return null
 	}
 
-	if (typeof packageJson.homepage === 'string') {
-		return vscode.Uri.parse(packageJson.homepage)
+	if (typeof packageJson.repository === 'string' && packageJson.repository.includes(':') === false) {
+		const url = 'https://github.com/' + packageJson.repository
+		const versionedUrl = createGitVersionedUrl(url, packageJson.version, undefined)
+		if (await isURLFound(versionedUrl)) {
+			return vscode.Uri.parse(versionedUrl)
 
-	} else if (typeof packageJson.repository === 'string' && packageJson.repository.includes(':') === false) {
-		return vscode.Uri.parse('https://github.com/' + packageJson.repository)
-
-	} else if (typeof packageJson.repository === 'object' && typeof packageJson.repository.url === 'string') {
-		return vscode.Uri.parse(packageJson.repository.url)
-
-	} else {
-		return vscode.Uri.parse('https://www.npmjs.com/package/' + name)
+		} else if (await isURLFound(url)) {
+			return vscode.Uri.parse(url)
+		}
 	}
+
+	if (typeof packageJson.repository === 'object' && typeof packageJson.repository.url === 'string') {
+		if (packageJson.version && packageJson.repository.url.startsWith('https://github.com/')) {
+			const url = packageJson.repository.url.replace(packageJson.repository.type === 'git' ? /\.git$/ : '', '')
+			const versionedUrl = createGitVersionedUrl(url, packageJson.version, packageJson.repository.directory)
+			if (await isURLFound(versionedUrl)) {
+				return vscode.Uri.parse(versionedUrl)
+			}
+		}
+
+		if (await isURLFound(packageJson.repository.url)) {
+			return vscode.Uri.parse(packageJson.repository.url)
+		}
+	}
+
+	// TODO: support other registries by reading `.npmrc` file
+	const npmUrl = 'https://www.npmjs.com/package/' + name + '/v/' + packageJson.version
+	return vscode.Uri.parse(npmUrl)
 }, (name: string, rootPath: string) => rootPath + '|' + name)
+
+function createGitVersionedUrl(url: string, version: string, directory: string | undefined): string {
+	return trimEnd(url, '/') + '/tree/v' + version + (directory ? ('/' + directory) : '')
+}
+
+async function isURLFound(url: string): Promise<boolean> {
+	try {
+		const response = await fetch(url, { method: 'HEAD' })
+		return response.status === 200
+	} catch {
+		return false
+	}
+}
 
 function checkIfBetween(location: ts.TextRange, position: vscode.Position, document: vscode.TextDocument) {
 	if (!location) return false

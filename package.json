@@ -46,7 +46,7 @@
 		"postinstall": "code --install-extension connor4312.esbuild-problem-matchers",
 		"build": "esbuild edge/extension.ts --bundle --platform=node --outfile=dist/extension.js --external:vscode --format=cjs --minify-whitespace",
 		"watch": "npm run build -- --watch --sourcemap",
-		"vscode:prepublish": "tsc --noEmit && npm run build -- --minify",
+		"vscode:prepublish": "tsc --noEmit --skipLibCheck && npm run build -- --minify",
 		"preversion": "npm run vscode:prepublish",
 		"version": "vsce publish",
 		"postversion": "git push --tags --quiet origin master:master"
@@ -57,6 +57,7 @@
 		"@types/vscode": "^1.73.0",
 		"esbuild": "^0.16.12",
 		"lodash": "^4.17.21",
+		"node-fetch": "^3.3.0",
 		"stylus-supremacy": "^2.17.3",
 		"typescript": "^4.9.4"
 	}

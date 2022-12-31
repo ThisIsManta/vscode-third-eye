@@ -1,4 +1,6 @@
 ## 5.5.0
+- Amend node module links to ignore `homepage` field.
+- Amend node module links to target specific version and directory on GitHub or NPM registry.
 - Upgrade dependencies.
 - Fix not being able to read package.json in node_modules.
 
