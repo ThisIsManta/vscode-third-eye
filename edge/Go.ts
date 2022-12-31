@@ -11,7 +11,7 @@ const standardLibrary = new RegExp('^(archive|archive/tar|archive/zip|bufio|buil
 const GOPATH = get(process.env, 'GOPATH', fp.join(os.homedir(), 'go', 'src'))
 
 export default class Go implements vscode.DocumentLinkProvider {
-	static support = { language: 'go' }
+	readonly id = 'go'
 
 	provideDocumentLinks(document: vscode.TextDocument, cancellationToken: vscode.CancellationToken) {
 		const text = document.getText()

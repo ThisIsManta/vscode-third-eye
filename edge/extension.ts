@@ -5,16 +5,34 @@ import JavaScript from './JavaScript'
 import Stylus from './Stylus'
 import FileWatcher from './FileWatcher'
 
+const packageJson = require('../package.json')
+
 export function activate(context: vscode.ExtensionContext) {
-	const go = new Go()
-	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(Go.support, go))
+	const languages = [
+		new Go(),
+		new JavaScript(),
+		new Stylus(),
+	]
 
-	const javaScript = new JavaScript()
-	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(JavaScript.support, javaScript))
-	context.subscriptions.push(vscode.languages.registerImplementationProvider(JavaScript.support, javaScript))
+	for (const language of languages) {
+		const languageSelector = Array.isArray(language.id)
+			? language.id.map(id => ({ language: id }))
+			: [{ language: language.id }]
 
-	const stylus = new Stylus()
-	context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(Stylus.support, stylus))
+		if (process.env.NODE_ENV !== 'production') {
+			for (const event of languageSelector.map(({ language }) => `onLanguage:${language}`)) {
+				if (!packageJson.activationEvents.includes(event)) {
+					throw new Error(`Expected the activation event "${event}" in package.json`)
+				}
+			}
+		}
+
+		context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(languageSelector, language))
+
+		if ('provideImplementation' in language) {
+			context.subscriptions.push(vscode.languages.registerImplementationProvider(languageSelector, language))
+		}
+	}
 }
 
 export function deactivate() {

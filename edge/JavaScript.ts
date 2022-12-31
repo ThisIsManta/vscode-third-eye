@@ -19,7 +19,7 @@ interface Stub extends vscode.DocumentLink {
 }
 
 export default class JavaScript implements vscode.DocumentLinkProvider, vscode.ImplementationProvider {
-	static support = ['javascript', 'javascriptreact', 'typescript', 'typescriptreact'].map(name => ({ language: name }))
+	readonly id = ['javascript', 'javascriptreact', 'typescript', 'typescriptreact']
 
 	provideDocumentLinks(document: vscode.TextDocument, cancellationToken: vscode.CancellationToken) {
 		let root = parseTreeOrNull(document)
@@ -190,7 +190,7 @@ export default class JavaScript implements vscode.DocumentLinkProvider, vscode.I
 		}
 
 		const rootPath = vscode.workspace.getWorkspaceFolder(document.uri).uri.fsPath
-		const packageJson = getNPMInfoOrNull(name, rootPath)
+		const packageJson = getPackageJson(name, rootPath)
 		if ('main' in packageJson) {
 			return new vscode.Location(
 				vscode.Uri.file(fp.resolve(fp.join(rootPath, 'node_modules', name), packageJson.main)),
@@ -254,7 +254,15 @@ function createRange(node: ts.Node, document: vscode.TextDocument) {
 	)
 }
 
-function getNPMInfoOrNull(name: string, rootPath: string) {
+interface PackageJson {
+	name: string
+	version: string
+	main?: string
+	homepage?: string
+	repository?: string | { url: string }
+}
+
+function getPackageJson(name: string, rootPath: string): PackageJson | null {
 	const path = fp.join(rootPath, 'node_modules', name, 'package.json')
 	if (FileWatcher.has(path)) {
 		try {
@@ -268,23 +276,23 @@ function getNPMInfoOrNull(name: string, rootPath: string) {
 }
 
 export const createUriForNPMModule: (name: string, rootPath: string) => vscode.Uri = memoize((name: string, rootPath: string) => {
-	const packageJson = getNPMInfoOrNull(name, rootPath)
-	if (typeof packageJson === 'object') {
-		if (typeof packageJson.homepage === 'string') {
-			return vscode.Uri.parse(packageJson.homepage)
-
-		} else if (packageJson.repository && typeof packageJson.repository.url === 'string') {
-			return vscode.Uri.parse(packageJson.repository.url)
-
-		} else if (typeof packageJson.repository === 'string' && packageJson.repository.includes(':') === false) {
-			return vscode.Uri.parse('https://github.com/' + packageJson.repository)
-
-		} else {
-			return vscode.Uri.parse('https://www.npmjs.com/package/' + name)
-		}
+	const packageJson = getPackageJson(name, rootPath)
+	if (packageJson === null) {
+		return null
 	}
 
-	return null
+	if (typeof packageJson.homepage === 'string') {
+		return vscode.Uri.parse(packageJson.homepage)
+
+	} else if (typeof packageJson.repository === 'string' && packageJson.repository.includes(':') === false) {
+		return vscode.Uri.parse('https://github.com/' + packageJson.repository)
+
+	} else if (typeof packageJson.repository === 'object' && typeof packageJson.repository.url === 'string') {
+		return vscode.Uri.parse(packageJson.repository.url)
+
+	} else {
+		return vscode.Uri.parse('https://www.npmjs.com/package/' + name)
+	}
 }, (name: string, rootPath: string) => rootPath + '|' + name)
 
 function checkIfBetween(location: ts.TextRange, position: vscode.Position, document: vscode.TextDocument) {

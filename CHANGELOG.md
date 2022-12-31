@@ -1,5 +1,6 @@
 ## 5.5.0
 - Upgrade dependencies.
+- Fix not being able to read package.json in node_modules.
 
 ## 5.4.1
 - Upgrade dependencies.

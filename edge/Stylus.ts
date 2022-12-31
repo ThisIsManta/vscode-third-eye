@@ -1,17 +1,17 @@
 import * as fp from 'path'
 import * as vscode from 'vscode'
-import * as Stylus from 'stylus'
+import { nodes, Parser } from 'stylus'
 import findChildNodes from 'stylus-supremacy/edge/findChildNodes'
 
 import FileWatcher from './FileWatcher'
 
-export default class StylusLinker implements vscode.DocumentLinkProvider {
-	static support = { language: 'stylus' }
+export default class Stylus implements vscode.DocumentLinkProvider {
+	readonly id = 'stylus'
 
 	provideDocumentLinks(document: vscode.TextDocument, cancellationToken: vscode.CancellationToken) {
 		let rootNode
 		try {
-			rootNode = new Stylus.Parser(document.getText()).parse()
+			rootNode = new Parser(document.getText()).parse()
 
 		} catch (ex) {
 			console.error(ex)
@@ -52,10 +52,10 @@ export default class StylusLinker implements vscode.DocumentLinkProvider {
 
 function checkImportStatement(node) {
 	return (
-		node instanceof Stylus.nodes.Import &&
-		node.path instanceof Stylus.nodes.Expression &&
+		node instanceof nodes.Import &&
+		node.path instanceof nodes.Expression &&
 		node.path.nodes.length > 0 &&
-		node.path.nodes[0] instanceof Stylus.nodes.String &&
+		node.path.nodes[0] instanceof nodes.String &&
 		node.path.nodes[0].val.length > 0
 	)
 }
