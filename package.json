@@ -41,7 +41,7 @@
 	"main": "dist/extension.js",
 	"scripts": {
 		"postinstall": "code --install-extension connor4312.esbuild-problem-matchers",
-		"build": "esbuild edge/extension.ts --bundle --platform=node --outfile=dist/extension.js --external:vscode --format=cjs --minify-whitespace",
+		"build": "esbuild edge/extension.ts --bundle --platform=node --outfile=dist/extension.js --external:vscode --external:typescript --format=cjs",
 		"watch": "npm run build -- --watch --sourcemap",
 		"vscode:prepublish": "npm run build -- --minify",
 		"version": "npx @vscode/vsce publish --pat $VSCE_PUBLISH_TOKEN"
@@ -54,7 +54,9 @@
 		"esbuild": "^0.23.1",
 		"lefthook": "^1.7.14",
 		"lodash": "^4.17.21",
-		"stylus-supremacy": "^4.0.0",
+		"stylus-supremacy": "^4.0.0"
+	},
+	"dependencies": {
 		"typescript": "^5.5.4"
 	}
 }
